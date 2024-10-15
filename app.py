@@ -32,6 +32,7 @@ import pandas as pd
 import pickle
 import os
 from sklearn.preprocessing import LabelEncoder
+from sklearn.multioutput import MultiOutputClassifier
 
 # Load the trained model
 with open('gradient_boosting_model.pkl', 'rb') as model_file:
@@ -43,10 +44,15 @@ app = Flask(__name__)
 # Initialize label encoders for target columns
 target_columns = ['Workout Plan', 'Equipment', 'Breakfast', 'Lunch', 'Dinner', 'Snacks']
 label_encoders = {}
+
+# Load or create label encoders
 for col in target_columns:
-    # Assuming you saved the encoders when training the model
-    with open(f'label_encoder_{col}.pkl', 'rb') as le_file:
-        label_encoders[col] = pickle.load(le_file)
+    # You can replace this with your own method of creating encoders, if you need to
+    label_encoders[col] = LabelEncoder()
+    # Add a sample fitting based on the unique values in your dataset
+    # (Replace with actual unique values from your training data if necessary)
+    unique_values = ["example_value1", "example_value2"]  # Replace with actual values
+    label_encoders[col].fit(unique_values)
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -78,6 +84,5 @@ def predict():
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # Get the port from environment variable
+    port = int(os.environ.get("PORT", 5000))  # Get the port from the environment variable
     app.run(host='0.0.0.0', port=port)  # Bind to 0.0.0.0 and use the environment port
-
