@@ -6,7 +6,7 @@ import os  # Import os to access environment variables
 app = Flask(__name__)
 
 # Load your models
-with gzip.open('model.pkl.gz', 'rb') as f:
+with open('models.pkl', 'rb') as f:
     models = pickle.load(f)
 
 @app.route('/predict', methods=['POST'])
