@@ -30,6 +30,7 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import pickle
+import os
 from sklearn.preprocessing import LabelEncoder
 
 # Load the trained model
@@ -43,16 +44,17 @@ app = Flask(__name__)
 target_columns = ['Workout Plan', 'Equipment', 'Breakfast', 'Lunch', 'Dinner', 'Snacks']
 label_encoders = {}
 for col in target_columns:
-    # Initialize a new LabelEncoder for each target column
-    label_encoders[col] = LabelEncoder()
+    # Assuming you saved the encoders when training the model
+    with open(f'label_encoder_{col}.pkl', 'rb') as le_file:
+        label_encoders[col] = pickle.load(le_file)
 
 @app.route('/predict', methods=['POST'])
 def predict():
     """Endpoint to make predictions based on user input."""
     data = request.json
 
-    # Extract and preprocess the input data
     try:
+        # Preprocess input data
         gender = 1 if data['gender'].lower() == 'male' else 0
         fitness_type = data['fitness_type'].lower()
         age = data['age']
@@ -60,21 +62,15 @@ def predict():
         height = data['height']
         hypertension = 1 if data['hypertension'].lower() == 'yes' else 0
         diabetes = 1 if data['diabetes'].lower() == 'yes' else 0
-
-        # Calculate BMI
         bmi = weight / ((height / 100) ** 2)
 
-        # Create DataFrame for prediction
         user_input = pd.DataFrame([[gender, fitness_type, age, weight, height, hypertension, diabetes, bmi]],
                                    columns=['Gender_Male', 'Fitness Type', 'Age', 'Weight', 'Height', 'Hypertension', 'Diabetes', 'BMI'])
 
-        # Predict workout plan, equipment, and meals
         predicted_recommendations = model.predict(user_input)
 
-        # Extract and decode predicted values
         decoded_recommendations = {}
         for idx, col in enumerate(target_columns):
-            # Decode the prediction using the label encoder
             decoded_recommendations[col] = label_encoders[col].inverse_transform([int(predicted_recommendations[0][idx])])[0]
 
         return jsonify(decoded_recommendations), 200
@@ -82,4 +78,6 @@ def predict():
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Get the port from environment variable
+    app.run(host='0.0.0.0', port=port)  # Bind to 0.0.0.0 and use the environment port
+
